@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Responsive Camera Container */
+    #camera-frame {
+        position: relative;
+        width: 100%; /* Fluid width */
+        max-width: 640px; /* Max desktop width */
+        margin: 0 auto;
+        background: #222;
+        padding: 10px; /* Reduced padding slightly for mobile */
+        border-radius: 4px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        border: 4px solid #444;
+        box-sizing: border-box; /* Prevents padding from increasing width */
+    }
+
+    /* Responsive Video */
+    #webcam {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 4/3; /* Maintains the 640x480 shape */
+        transform: scaleX(-1);
+        border: 2px solid #555;
+        display: block;
+        background: #000;
+        box-sizing: border-box;
+    }
+
+    /* Progress Bar Container */
+    #progress-container {
+        position: absolute; 
+        bottom: 15px; 
+        left: 10px; /* Aligned with padding */
+        right: 10px; /* Aligned with padding */
+        height: 10px; 
+        background: rgba(0,0,0,0.6); 
+        display: none;
+        width: auto; /* Allow it to fill the space defined by left/right */
+    }
+
+    /* Mobile Text Adjustments */
+    @media (max-width: 600px) {
+        .vintage-title { font-size: 3rem !important; }
+        #countdown { font-size: 80px !important; }
+        
+        /* Stack buttons on very small screens */
+        .btn-container { flex-direction: column; gap: 10px; }
+        .btn-vintage { width: 100%; }
+        
+        #user-message { font-size: 1.2rem; width: 100%; }
+    }
+</style>
+
+    <h2 class="vintage-title">GIF Session</h2>
+
+    <div id="camera-frame">
+        <video id="webcam" autoplay playsinline></video>
+        
+        <div id="rec-dot" style="position: absolute; top: 20px; right: 20px; width: 15px; height: 15px; background: red; border-radius: 50%; display: none; box-shadow: 0 0 10px red;"></div>
+        
+        <div id="progress-container">
+            <div id="progress-bar" style="width: 0%; height: 100%; background: #d4af37; transition: width 0.2s linear;"></div>
+        </div>
+
+        <div id="countdown" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Sacramento', cursive; font-size: 120px; color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.8); display: none;">
+            3
+        </div>
+    </div>
+
+    <div id="controls" style="margin-top: 30px; min-height: 100px; padding: 0 20px;">
+        <p style="font-size: 1.4rem; margin-bottom: 20px; color: var(--text-brown);">
+            Record a short clip.
+        </p>
+        <button id="start-btn" class="btn-vintage">Start Recording</button>
+    </div>
+
+    <div id="editing-stage" style="display: none; margin-top: 30px; padding: 0 20px;">
+        <h3 style="font-family: 'Sacramento', cursive; font-size: 2.5rem; color: var(--text-brown); margin-bottom: 10px;">
+            Caption Your GIF
+        </h3>
+        
+        <input type="text" id="user-message" placeholder="e.g. Party Vibes" 
+               style="background: transparent; border: none; border-bottom: 2px solid var(--btn-coffee); 
+                      font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; text-align: center; 
+                      color: var(--text-brown); width: 100%; max-width: 400px; padding: 10px; outline: none;">
+        
+        <div class="btn-container" style="justify-content: center; margin-top: 20px; gap: 20px;">
+            <button onclick="window.location.reload()" class="btn-vintage" style="background: #888;">Retake</button>
+            <button id="finalize-btn" class="btn-vintage">Create GIF</button>
+        </div>
+    </div>
+
+    <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
+    
+    {% csrf_token %}
+
+<script>
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const startBtn = document.getElementById('start-btn');
+    const finalizeBtn = document.getElementById('finalize-btn');
+    const countdownDisplay = document.getElementById('countdown');
+    const recDot = document.getElementById('rec-dot');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('progress-bar');
+    const controls = document.getElementById('controls');
+    const editingStage = document.getElementById('editing-stage');
+
+    // GIF Settings
+    const FRAMES_TO_CAPTURE = 10; 
+    const INTERVAL_MS = 200; 
+    let capturedImages = [];
+
+    // 1. Initialize Webcam (Request ideal size, but accept whatever works)
+    navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            alert("Camera access denied.");
+            console.error(err);
+        });
+
+    // 2. Start Logic
+    startBtn.addEventListener('click', () => {
+        controls.style.display = 'none';
+        countdownDisplay.style.display = 'block';
+        runCountdown(3, startGifCapture);
+    });
+
+    function runCountdown(num, callback) {
+        countdownDisplay.innerText = num;
+        if (num > 0) {
+            setTimeout(() => runCountdown(num - 1, callback), 1000);
+        } else {
+            countdownDisplay.innerText = "";
+            callback();
+        }
+    }
+
+    // 3. Continuous Capture
+    async function startGifCapture() {
+        capturedImages = [];
+        recDot.style.display = 'block'; 
+        progressContainer.style.display = 'block'; 
+        
+        const context = canvas.getContext('2d');
+
+        for (let i = 0; i < FRAMES_TO_CAPTURE; i++) {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.7));
+            capturedImages.push(blob);
+
+            const percentage = ((i + 1) / FRAMES_TO_CAPTURE) * 100;
+            progressBar.style.width = `${percentage}%`;
+
+            if (i < FRAMES_TO_CAPTURE - 1) {
+                await new Promise(r => setTimeout(r, INTERVAL_MS));
+            }
+        }
+
+        finishCapture();
+    }
+
+    function finishCapture() {
+        recDot.style.display = 'none';
+        progressContainer.style.display = 'none';
+        video.pause(); 
+        editingStage.style.display = 'block';
+    }
+
+    // 4. Send to Server
+    finalizeBtn.addEventListener('click', () => {
+        finalizeBtn.innerText = "Processing GIF...";
+        finalizeBtn.disabled = true;
+
+        const formData = new FormData();
+        capturedImages.forEach((blob, i) => {
+            formData.append('webcam_images[]', blob, `frame_${i}.jpg`);
+        });
+        formData.append('user_message', document.getElementById('user-message').value);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        fetch('{% url "gif_process" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = `/result/${data.session_id}/`;
+            } else {
+                alert("Error: " + data.message);
+                finalizeBtn.disabled = false;
+                finalizeBtn.innerText = "Create GIF";
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Upload failed.");
+            finalizeBtn.disabled = false;
+        });
+    });
+</script>
+{% endblock %}

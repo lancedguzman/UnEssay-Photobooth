@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2 class="vintage-title" style="font-size: 3rem;">Photo Session</h2>
+
+    <div id="camera-frame" style="position: relative; width: 660px; margin: 0 auto; background: #222; padding: 10px; border-radius: 4px; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+        <video id="webcam" autoplay playsinline style="width: 640px; height: 480px; transform: scaleX(-1); border: 2px solid #555; display: block;"></video>
+        
+        <div id="flash-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; background:white; opacity:0; pointer-events:none;"></div>
+        
+        <div id="countdown" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Rye', serif; font-size: 120px; color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;">
+            5
+        </div>
+    </div>
+
+    <div id="controls" style="margin-top: 30px;">
+        <p style="font-family: 'Special Elite', cursive; font-size: 1.2rem; margin-bottom: 20px;">
+            Ready to take {% if selected_template == 'photostrip_1.jpg' or selected_template == 'photostrip_2.jpg' %}4{% else %}3{% endif %} photos?
+        </p>
+        <button id="start-btn" class="btn-vintage">Start Camera</button>
+    </div>
+
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+    {% csrf_token %}
+
+<script>
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const startBtn = document.getElementById('start-btn');
+    const countdownDisplay = document.getElementById('countdown');
+    const flashOverlay = document.getElementById('flash-overlay');
+    const controls = document.getElementById('controls');
+
+    const currentTemplate = '{{ selected_template }}';
+    const totalShots = (currentTemplate === 'photostrip_1.jpg' || currentTemplate === 'photostrip_2.jpg' || currentTemplate === 'photostrip_3.jpg') ? 4 : 3;
+
+    let capturedImages = [];
+
+    navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            alert("Please allow camera access in your browser settings.");
+            console.error(err);
+        });
+
+    startBtn.addEventListener('click', startSequence);
+
+    function startSequence() {
+        controls.style.display = 'none'; 
+        countdownDisplay.style.display = 'block';
+        runCountdown(5); // Updated to 5 seconds for the first shot
+    }
+
+    function runCountdown(num) {
+        countdownDisplay.innerText = num;
+        if (num > 0) {
+            setTimeout(() => runCountdown(num - 1), 1000);
+        } else {
+            countdownDisplay.innerText = "Smile!";
+            setTimeout(takePhotoSequence, 300); 
+        }
+    }
+
+    async function takePhotoSequence() {
+        capturedImages = []; 
+        
+        for (let i = 1; i <= totalShots; i++) {
+            triggerFlash();
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
+            capturedImages.push(blob);
+
+            // Wait and count down 7 seconds between shots
+            if (i < totalShots) {
+                for (let c = 7; c > 0; c--) {
+                    countdownDisplay.innerText = `Next in ${c}...`;
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+                countdownDisplay.innerText = "Smile!";
+                await new Promise(r => setTimeout(r, 300));
+            }
+        }
+
+        finishCapture();
+    }
+
+    function triggerFlash() {
+        flashOverlay.style.opacity = 1;
+        setTimeout(() => flashOverlay.style.opacity = 0, 150);
+    }
+
+    function finishCapture() {
+        countdownDisplay.innerText = "Developing...";
+        video.srcObject.getTracks().forEach(track => track.stop()); 
+        sendDataToServer();
+    }
+
+    function sendDataToServer() {
+        const formData = new FormData();
+        
+        capturedImages.forEach((blob, i) => {
+            formData.append('webcam_images[]', blob, `shot_${i}.jpg`);
+        });
+        
+        formData.append('template_choice', currentTemplate);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        fetch('{% url "photo_process" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = `/review/${data.session_id}/`;
+            }
+        });
+    }
+</script>
+{% endblock %}

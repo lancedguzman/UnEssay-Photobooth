@@ -1,0 +1,23 @@
+{% extends 'photobooth/base.html' %}
+{% load static %}
+
+{% block content %}
+<div style="text-align: center; max-width: 600px; margin: 0 auto;">
+    <h1 class="vintage-title" style="font-size: 6rem; margin-bottom: 10px;">404</h1>
+    <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 2rem; color: var(--text-brown); margin-top: 0;">
+        Lost in the Darkroom?
+    </h2>
+    
+    <div style="margin: 30px auto; width: 150px; height: 150px; border: 4px dashed var(--text-brown); border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0.6;">
+        <span style="font-size: 3rem;">?</span>
+    </div>
+
+    <p style="font-size: 1.2rem; margin-bottom: 40px;">
+        The photo you are looking for seems to have faded away.
+    </p>
+
+    <a href="{% url 'photobooth:landing' %}" class="btn-vintage">
+        Return to Safety
+    </a>
+</div>
+{% endblock %}

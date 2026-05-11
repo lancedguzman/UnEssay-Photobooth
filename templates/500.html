@@ -1,0 +1,23 @@
+{% extends 'photobooth/base.html' %}
+{% load static %}
+
+{% block content %}
+<div style="text-align: center; max-width: 600px; margin: 0 auto;">
+    <h1 class="vintage-title" style="font-size: 5rem;">Camera Jammed</h1>
+    
+    <p style="font-family: 'Courier New', monospace; font-size: 1.1rem; background: #fff8f0; padding: 15px; border: 1px solid var(--text-brown); display: inline-block;">
+        Error Code: 500 (Internal Server Error)
+    </p>
+
+    <p style="font-size: 1.2rem; margin: 30px 0;">
+        Our film got tangled. We are fixing the machinery right now.
+        <br>Please try reloading the page in a moment.
+    </p>
+
+    <div class="btn-container" style="justify-content: center;">
+        <a href="{% url 'photobooth:landing' %}" class="btn-vintage">
+            Reload Page
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <h2 class="vintage-title">Retake Photo {{ photo_index|add:1 }}</h2>
+
+    <div id="camera-frame" style="position: relative; background: #222; padding: 10px; border-radius: 4px; width: 660px; margin: 0 auto;">
+        <video id="webcam" autoplay playsinline style="width: 640px; height: 480px; transform: scaleX(-1); border: 2px solid #555; display: block;"></video>
+        
+        <!-- Added countdown UI for the retake page -->
+        <div id="countdown" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Rye', serif; font-size: 120px; color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.5); display: none;">
+            7
+        </div>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <button id="snap-btn" class="btn-vintage">Snap Replacement</button>
+        <a href="{% url 'photobooth:review' session_id %}" class="btn-vintage" style="background-color: #777; margin-left: 20px;">Cancel</a>
+    </div>
+
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+    {% csrf_token %}
+
+<script>
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const snapBtn = document.getElementById('snap-btn');
+    const countdownDisplay = document.getElementById('countdown');
+    const sessionId = "{{ session_id }}";
+    const photoIndex = "{{ photo_index }}";
+
+    navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+        .then(stream => { video.srcObject = stream; });
+
+    // Initiate 7-second countdown on click
+    snapBtn.addEventListener('click', () => {
+        snapBtn.disabled = true;
+        countdownDisplay.style.display = 'block';
+        runCountdown(7);
+    });
+
+    function runCountdown(num) {
+        countdownDisplay.innerText = num;
+        if (num > 0) {
+            setTimeout(() => runCountdown(num - 1), 1000);
+        } else {
+            countdownDisplay.innerText = "Smile!";
+            setTimeout(takeRetakePhoto, 300);
+        }
+    }
+
+    // Capture logic abstracted from the event listener
+    async function takeRetakePhoto() {
+        countdownDisplay.innerText = "Saving...";
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
+
+        const formData = new FormData();
+        formData.append('webcam_image', blob, `retake_${photoIndex}.jpg`);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        fetch(`/process-retake/${sessionId}/${photoIndex}/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = `/review/${sessionId}/`;
+            } else {
+                alert("Error uploading retake");
+                snapBtn.disabled = false;
+                countdownDisplay.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %} 
+
+{% block content %}
+    <style>
+        .modal-overlay {
+            display: none; 
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(93, 64, 55, 0.85); /* Vintage brown overlay */
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-card {
+            background-color: var(--bg-cream); /* Reusing base.html variables */
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 850px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+        }
+
+        .strip-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .strip-option {
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 4px solid transparent;
+            padding: 5px;
+            background: white;
+        }
+
+        .strip-option:hover {
+            transform: scale(1.05);
+            border-color: var(--btn-coffee);
+        }
+
+        .strip-option img {
+            width: 100%;
+            height: auto;
+        }
+
+        .strip-name {
+            display: block;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+    </style>
+
+    <img src="https://placehold.co/200x300/eee/999?text=Polaroid" alt="Polaroid Stack" class="polaroid-stack">
+
+    <h1 class="vintage-title">Vintage Photobooth</h1>
+
+    <div class="btn-container">
+        <!-- Opens the design selection modal -->
+        <button id="open-modal-btn" class="btn-vintage" onclick="toggleModal(true)">
+            Use Camera
+        </button>
+
+        <a href="{% url 'gif_ui' %}" class="btn-vintage">
+            Capture GIF
+        </a>
+    </div>
+
+    <!-- Selection Modal -->
+    <div id="strip-modal" class="modal-overlay" onclick="toggleModal(false)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <h2 class="vintage-title" style="font-size: 3rem; margin: 0;">Select a Design</h2>
+            
+            <div class="strip-grid">
+                <!-- Option 1: Classic -->
+                <div class="strip-option" onclick="selectTemplate('photostrip_1.jpg')">
+                    <img src="/media/photostrips/photostrip_1.jpg" alt="Classic Strip">
+                    <span class="strip-name">Classic Slate</span>
+                </div>
+
+                <!-- Option 2: Wisteria -->
+                <div class="strip-option" onclick="selectTemplate('photostrip_2.jpg')">
+                    <img src="/media/photostrips/photostrip_2.jpg" alt="Wisteria Strip">
+                    <span class="strip-name">Wisteria Dream</span>
+                </div>
+
+                <!-- Option 3: Assemball -->
+                <div class="strip-option" onclick="selectTemplate('photostrip_3.jpg')">
+                    <img src="/media/photostrips/photostrip_3.jpg" alt="Assemball Strip">
+                    <span class="strip-name">Assemball 2026</span>
+                </div>
+            </div>
+            
+            <button class="btn-vintage" style="background: #777;" onclick="toggleModal(false)">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        function toggleModal(show) {
+            document.getElementById('strip-modal').style.display = show ? 'flex' : 'none';
+        }
+
+        function selectTemplate(filename) {
+            // Redirect to camera UI with the template as a query parameter
+            window.location.href = `{% url 'photo_ui' %}?template=${filename}`;
+        }
+    </script>
+{% endblock %}
