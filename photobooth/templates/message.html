@@ -4,9 +4,6 @@
 <div style="max-width: 600px; margin: 0 auto; text-align: center;">
     
     <h1 class="vintage-title" style="font-size: 3.5rem;">Add a Note</h1>
-    <p style="font-size: 1.2rem; margin-bottom: 30px; color: var(--text-brown);">
-        Personalize your memory before printing.
-    </p>
 
     <div style="background: #fff; padding: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transform: rotate(2deg); width: 200px; margin: 0 auto 30px auto; border: 1px solid #eee;">
         <img src="{{ session.final_file.url }}" style="width: 100%; display: block;">
@@ -14,15 +11,28 @@
 
     <form method="POST">
         {% csrf_token %}
-        <textarea name="user_message" placeholder="Write your message here..." rows="3" maxlength="150"
-                  style="width: 100%; padding: 20px; font-family: 'Special Elite', cursive; font-size: 1.5rem; 
-                         border: 2px solid var(--btn-coffee); background: #fff8f0; color: #444; border-radius: 8px; outline: none; resize: none;"></textarea>
         
-        <div style="margin-top: 30px;">
-            <button type="submit" class="btn-vintage">
-                Finalize & Print
-            </button>
+        <div style="margin-bottom: 20px; text-align: left;">
+            <label style="font-family: 'Special Elite', cursive; font-size: 1.2rem; color: var(--text-brown); display: block; margin-bottom: 5px;">
+                Who are you?
+            </label>
+            <textarea name="message_iam" placeholder="I am..." rows="2" maxlength="75"
+                    style="width: 100%; padding: 15px; font-family: 'Special Elite', cursive; font-size: 1.3rem; 
+                            border: 2px solid var(--btn-coffee); background: #fff8f0; color: #444; border-radius: 8px; outline: none; resize: none;"></textarea>
         </div>
+
+        <div style="margin-bottom: 30px; text-align: left;">
+            <label style="font-family: 'Special Elite', cursive; font-size: 1.2rem; color: var(--text-brown); display: block; margin-bottom: 5px;">
+                What do you leave behind?
+            </label>
+            <textarea name="message_reject" placeholder="I reject..." rows="2" maxlength="75"
+                    style="width: 100%; padding: 15px; font-family: 'Special Elite', cursive; font-size: 1.3rem; 
+                            border: 2px solid var(--btn-coffee); background: #fff8f0; color: #444; border-radius: 8px; outline: none; resize: none;"></textarea>
+        </div>
+        
+        <button type="submit" class="btn-vintage" style="padding: 15px 40px; font-size: 1.5rem;">
+            Print Strip
+        </button>
     </form>
     
     <div style="margin-top: 20px;">

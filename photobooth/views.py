@@ -85,27 +85,21 @@ def finalize_session(request, session_id):
 
 
 def message(request, session_id):
-    session = get_object_or_404(PhotoSession, id=session_id)
-    
+    """
+    Renders the message input form and processes the submitted messages.
+     - For GIFs: Passes both messages to the GIF burner.
+     - For Images: Passes both messages to the standard Image burner.
+    """
     session = get_object_or_404(PhotoSession, id=session_id)
     
     if request.method == 'POST':
-        msg = request.POST.get('user_message', '')
+        # Ensure these match the 'name' attributes in message.html exactly
+        msg_iam = request.POST.get('message_iam', '').strip()
+        msg_reject = request.POST.get('message_reject', '').strip()
         
-        # Update DB
-        session.user_message = msg
-        session.save()
-        
-        if msg:
-            # Check file type and call appropriate service
-            file_name = session.final_file.name.lower()
-            
-            if file_name.endswith('.gif'):
-                # Use the GIF-specific burner (keeps animation)
-                add_message_to_gif(session.final_file.name, msg)
-            else:
-                # Use the standard Photo burner
-                add_message_to_image(session.final_file.name, msg)
+        if session.final_file:
+            # Pass them to the burner service
+            add_message_to_image(session.final_file.name, msg_iam, msg_reject)
         
         return redirect('photobooth:result', session_id=session.id)
     
