@@ -56,58 +56,14 @@
         }
     </style>
 
-    <img src="https://placehold.co/200x300/eee/999?text=Polaroid" alt="Polaroid Stack" class="polaroid-stack">
-
-    <h1 class="vintage-title">Vintage Photobooth</h1>
+    <h1 class="vintage-title">What We Reject Photobooth</h1>
 
     <div class="btn-container">
-        <!-- Opens the design selection modal -->
-        <button id="open-modal-btn" class="btn-vintage" onclick="toggleModal(true)">
+        <a href="{% url 'photo_ui' %}?template=photostrip.jpg" class="btn-vintage">
             Use Camera
-        </button>
-
+        </a>
         <a href="{% url 'gif_ui' %}" class="btn-vintage">
             Capture GIF
         </a>
     </div>
-
-    <!-- Selection Modal -->
-    <div id="strip-modal" class="modal-overlay" onclick="toggleModal(false)">
-        <div class="modal-card" onclick="event.stopPropagation()">
-            <h2 class="vintage-title" style="font-size: 3rem; margin: 0;">Select a Design</h2>
-            
-            <div class="strip-grid">
-                <!-- Option 1: Classic -->
-                <div class="strip-option" onclick="selectTemplate('photostrip_1.jpg')">
-                    <img src="/media/photostrips/photostrip_1.jpg" alt="Classic Strip">
-                    <span class="strip-name">Classic Slate</span>
-                </div>
-
-                <!-- Option 2: Wisteria -->
-                <div class="strip-option" onclick="selectTemplate('photostrip_2.jpg')">
-                    <img src="/media/photostrips/photostrip_2.jpg" alt="Wisteria Strip">
-                    <span class="strip-name">Wisteria Dream</span>
-                </div>
-
-                <!-- Option 3: Assemball -->
-                <div class="strip-option" onclick="selectTemplate('photostrip_3.jpg')">
-                    <img src="/media/photostrips/photostrip_3.jpg" alt="Assemball Strip">
-                    <span class="strip-name">Assemball 2026</span>
-                </div>
-            </div>
-            
-            <button class="btn-vintage" style="background: #777;" onclick="toggleModal(false)">Cancel</button>
-        </div>
-    </div>
-
-    <script>
-        function toggleModal(show) {
-            document.getElementById('strip-modal').style.display = show ? 'flex' : 'none';
-        }
-
-        function selectTemplate(filename) {
-            // Redirect to camera UI with the template as a query parameter
-            window.location.href = `{% url 'photo_ui' %}?template=${filename}`;
-        }
-    </script>
 {% endblock %}
